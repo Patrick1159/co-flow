@@ -8,6 +8,23 @@
 它适合多 worker 并行、需要 git 隔离、需要持续监督与回收的仓库级工作流。  
 它不把 tmux `send-keys` 当主控制方式，而优先依赖 Claude Code 原生后台 session 机制。  
 
+## 安装
+
+默认安装位置是 `~/.codex/skills/claude-code-coordinator`。
+
+最直接的安装方式：
+
+```bash
+mkdir -p ~/.codex/skills
+git clone https://github.com/Patrick1159/co-flow.git ~/.codex/skills/claude-code-coordinator
+```
+
+如果已经克隆过仓库，只需要更新：
+
+```bash
+git -C ~/.codex/skills/claude-code-coordinator pull
+```
+
 ## 在 Codex 中直接调用
 
 直接在 Codex 对话里显式调用这个 skill，不需要你自己先敲脚本命令。

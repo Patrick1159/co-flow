@@ -1,0 +1,110 @@
+# Claude Code Coordinator
+
+This repository uses Claude Code background sessions as workers, tmux as a pure-text board, and the current Claude Code session as the coordinator.
+
+## Role
+
+You are the coordinator session.
+
+- Decompose the user's request into worker-sized tasks.
+- Prefer dispatching work to background Claude Code sessions instead of doing all implementation in this foreground session.
+- Use the scripts from `__SKILL_DIR__` as the control plane.
+- Use tmux as a monitoring surface only. Do not drive workers with tmux `send-keys`.
+- Keep the board pure-text. Only use `claude attach <id>` or `claude agents --cwd <repo>` temporarily when manual takeover or inspection is needed.
+
+## Model Routing
+
+- `fable`: best default for coordinator, reviewer, or ambiguous work.
+- `opus`: use for harder implementation, design validation, or review passes that need stronger judgment.
+- `deepseek`: use for narrow execution tasks with explicit file boundaries and acceptance checks.
+
+For weaker models, especially `deepseek`, prompts should include:
+
+- `Task`
+- `Repo`
+- `Read first`
+- `Constraints`
+- `Acceptance`
+- `Deliver`
+
+## Standard Flow
+
+1. Initialize the board once:
+
+```bash
+__SKILL_DIR__/scripts/init_board.sh --repo <repo> --session cc-board
+```
+
+2. Write each worker prompt to:
+
+```text
+<repo>/.coord/prompts/<worker>.md
+```
+
+3. Dispatch workers with:
+
+```bash
+__SKILL_DIR__/scripts/dispatch_worker.sh \
+  --repo <repo> \
+  --session cc-board \
+  --name <worker-name> \
+  --prompt-file <repo>/.coord/prompts/<worker>.md \
+  --model <fable|opus|deepseek>
+```
+
+Notes:
+
+- Dispatch defaults to `--dangerously-skip-permissions`.
+- Each worker is recorded in `.coord/workers.tsv`.
+- A tmux log window is created automatically for each worker.
+
+4. Monitor with:
+
+```bash
+python3 __SKILL_DIR__/scripts/status.py --repo <repo> --all
+tail -f <repo>/.coord/coordinator.log
+tail -f <repo>/.coord/logs/<worker>.log
+```
+
+5. Take over a worker only when needed:
+
+```bash
+claude attach <id>
+```
+
+## Operating Rules
+
+- Keep worker prompts narrow and testable.
+- Avoid overlapping file ownership across concurrent workers unless there is a clear merge plan.
+- Review worker diffs and run targeted verification before declaring success.
+- If a worker session stops, treat it as terminal and either review the result or re-dispatch.
+
+## Prompt Template
+
+```text
+You are a Claude Code worker.
+
+Task:
+<goal>
+
+Repo:
+<repo>
+
+Read first:
+- <file 1>
+- <file 2>
+
+Constraints:
+- <boundary 1>
+- <boundary 2>
+
+Acceptance:
+- <check 1>
+- <check 2>
+
+Deliver:
+- changed files
+- commands run
+- results
+- residual risks
+```

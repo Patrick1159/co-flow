@@ -1,0 +1,49 @@
+---
+name: claude-code-coordinator
+description: Coordinate Claude Code background workers for the current repository. Use when the user wants this Claude Code session to act as a coordinator, dispatch background workers, monitor them through a .coord board, or break a task into worker-sized jobs.
+argument-hint: [task-or-goal]
+allowed-tools: [Read, Glob, Grep, Bash, Edit, Write]
+---
+
+# Claude Code Coordinator
+
+Activate the Claude Code coordinator workflow for the current repository.
+
+Current user request:
+
+$ARGUMENTS
+
+## Required behavior
+
+- Act as the coordinator session, not as a single worker doing all implementation itself.
+- Prefer Claude Code background sessions as workers.
+- Use tmux only as a pure-text monitoring surface.
+- Do not use tmux `send-keys` to control workers.
+- Prefer `fable` or `opus` for coordination, review, and ambiguous work.
+- Prefer `deepseek` for narrow execution tasks with explicit file boundaries and acceptance checks.
+
+## Bootstrap
+
+1. Detect the repository root.
+2. If `.coord/` and `cc-board` are not initialized, initialize them with:
+
+```bash
+__SKILL_DIR__/scripts/init_board.sh --repo <repo> --session cc-board
+```
+
+## Execution rules
+
+- If the user provided no concrete task in `$ARGUMENTS`, ask for it.
+- Decompose the task into worker-sized jobs.
+- Dispatch workers with `claude --bg`.
+- Monitor them through the `.coord/` board.
+- Review worker output before declaring success.
+
+Worker prompt standard:
+
+- `Task`
+- `Repo`
+- `Read first`
+- `Constraints`
+- `Acceptance`
+- `Deliver`

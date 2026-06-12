@@ -8,60 +8,32 @@
 它适合多 worker 并行、需要 git 隔离、需要持续监督与回收的仓库级工作流。  
 它不把 tmux `send-keys` 当主控制方式，而优先依赖 Claude Code 原生后台 session 机制。  
 
-## 开箱即用
+## 在 Codex 中直接调用
 
-1. 初始化 dashboard：
+直接在 Codex 对话里显式调用这个 skill，不需要你自己先敲脚本命令。
 
-```bash
-~/.codex/skills/claude-code-coordinator/scripts/init_board.sh \
-  --repo /path/to/repo \
-  --session cc-board
+以下行为已经封装在 skill 里，属于默认工作流，不需要你在每次 prompt 里重复声明：
+
+- 使用 Claude Code background session 执行
+- 自动建立 tmux dashboard
+- 自动记录 session id 到 `.coord/workers.tsv`
+- 在需要人工接管时，给出 `claude attach <id>` 的进入方式
+
+最简单可用的例子：
+
+```text
+使用 $claude-code-coordinator，在 /path/to/repo 上处理这个任务：
+
+修复 auth 相关失败测试。
 ```
 
-2. 写一个 worker prompt：
+Codex 在加载这个 skill 后，会自动优先使用这套方法：
 
-```bash
-mkdir -p /path/to/repo/.coord/prompts
-cat > /path/to/repo/.coord/prompts/auth-fix.md <<'EOF'
-You are a Claude Code worker.
-
-Task:
-Fix auth-related failing tests.
-
-Constraints:
-- Only modify auth-related files.
-- Do not refactor unrelated code.
-- Do not merge branches.
-
-Acceptance:
-- Relevant tests pass.
-- Report changed files, commands run, results, and residual risks.
-EOF
-```
-
-3. 派发后台 worker：
-
-```bash
-~/.codex/skills/claude-code-coordinator/scripts/dispatch_worker.sh \
-  --repo /path/to/repo \
-  --name auth-fix \
-  --prompt-file /path/to/repo/.coord/prompts/auth-fix.md \
-  --model fable
-```
-
-4. 查看状态：
-
-```bash
-python ~/.codex/skills/claude-code-coordinator/scripts/status.py \
-  --repo /path/to/repo \
-  --all
-```
-
-5. 需要时人工接管：
-
-```bash
-claude attach <session-id>
-```
+- `claude --bg`
+- `claude agents --json`
+- `claude logs <id>`
+- `claude attach <id>`
+- tmux dashboard + 每个 worker 的日志窗口
 
 ## 目录
 

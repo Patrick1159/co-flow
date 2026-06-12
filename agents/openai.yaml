@@ -1,0 +1,4 @@
+interface:
+  display_name: "Claude Code Coordinator"
+  short_description: "Coordinate Claude Code background workers"
+  default_prompt: "Use $claude-code-coordinator to dispatch and supervise Claude Code background workers for this repo."
